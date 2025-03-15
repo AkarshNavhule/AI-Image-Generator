@@ -1,103 +1,314 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+// Disable SSR for this page to avoid hydration mismatches
+export const dynamic = 'force-dynamic';
+
+import { useState, useEffect } from 'react';
+import { useSession, signIn, signOut } from 'next-auth/react';
+
+// Material UI imports
+import {
+  Box,
+  Button,
+  Card,
+  CardActions,
+  CardContent,
+  CardMedia,
+  Container,
+  Divider,
+  Grid,
+  IconButton,
+  Paper,
+  TextField,
+  Typography,
+  useMediaQuery
+} from '@mui/material';
+import { useTheme } from '@mui/material/styles';
+import ClearIcon from '@mui/icons-material/Clear';
+
+export default function HomePage() {
+  const { data: session, status } = useSession();
+  const theme = useTheme();
+  // `sm` breakpoint ~ 600px by default; adjust if needed
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  // State for user input and generated image
+  const [prompt, setPrompt] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [generatedImage, setGeneratedImage] = useState(null);
+
+  // State for status message (success/error)
+  const [statusMessage, setStatusMessage] = useState(null);
+
+  // State for storing history of { prompt, imageUrl, timestamp }
+  const [history, setHistory] = useState([]);
+
+  // 1) Load history from localStorage on first render
+  useEffect(() => {
+    const savedHistory = localStorage.getItem('imageHistory');
+    if (savedHistory) {
+      setHistory(JSON.parse(savedHistory));
+    }
+  }, []);
+
+  // 2) Whenever history changes, save it to localStorage
+  useEffect(() => {
+    localStorage.setItem('imageHistory', JSON.stringify(history));
+  }, [history]);
+
+  // 3) Auto-clear the status message after 3 seconds
+  useEffect(() => {
+    if (statusMessage) {
+      const timer = setTimeout(() => setStatusMessage(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [statusMessage]);
+
+  // 4) Helper function to generate the image
+  async function generateImage() {
+    if (!prompt) return;
+    setLoading(true);
+    setStatusMessage(null);
+
+    try {
+      const response = await fetch('/api/generate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt })
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setGeneratedImage(data.imageUrl);
+        setStatusMessage('AI image is generated!');
+
+        // Add new item to history (front of the array)
+        const newItem = {
+          prompt,
+          imageUrl: data.imageUrl,
+          timestamp: Date.now()
+        };
+        setHistory((prev) => [newItem, ...prev]);
+      } else {
+        console.error('Error generating image:', data.error);
+        setStatusMessage('Failed to generate image.');
+      }
+    } catch (error) {
+      console.error('Request error:', error);
+      setStatusMessage('Failed to generate image.');
+    }
+    setLoading(false);
+  }
+
+  // 5) Desktop form submission
+  function handleGenerateDesktop(e) {
+    e.preventDefault();
+    generateImage();
+  }
+
+  // 6) Mobile generate button click
+  function handleGenerateMobile() {
+    generateImage();
+  }
+
+  // 7) Clear history in localStorage (not in DB)
+  function handleClearHistory() {
+    setHistory([]);
+    localStorage.removeItem('imageHistory');
+  }
+
+  // 8) Wait for session to load to avoid SSR mismatch
+  if (status === 'loading') {
+    return (
+      <Container sx={{ textAlign: 'center', mt: 5 }}>
+        <Typography variant="h5" gutterBottom>
+          Loading...
+        </Typography>
+      </Container>
+    );
+  }
+
+  // If user is not signed in, show the sign-in button
+  if (!session) {
+    return (
+      <Container sx={{ textAlign: 'center', mt: 5 }}>
+        <Typography variant="h5" gutterBottom>
+          Please sign in
+        </Typography>
+        <Button variant="contained" onClick={() => signIn('google')}>
+          Sign in with Google
+        </Button>
+      </Container>
+    );
+  }
+
+  // MAIN UI (when user is signed in)
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.js
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <Container sx={{ my: 4, pb: isMobile ? 8 : 0 }}>
+      {/* Only show top bar on desktop/tablet */}
+      {!isMobile && (
+        <Box
+          display="flex"
+          justifyContent="space-between"
+          alignItems="center"
+          mb={2}
+        >
+          <Typography variant="body1">
+            Hi, {session.user?.name}
+          </Typography>
+          <Button variant="outlined" onClick={() => signOut()}>
+            Sign out
+          </Button>
+        </Box>
+      )}
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      {/* Prompt input and Generate button (desktop only) */}
+      {!isMobile && (
+        <Box
+          component="form"
+          onSubmit={handleGenerateDesktop}
+          display="flex"
+          gap={2}
+          mb={2}
+          flexWrap="wrap"
+        >
+          <TextField
+            label="Enter your prompt"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            fullWidth
+            sx={{ flex: '1 1 auto', minWidth: '250px' }}
+          />
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={loading}
+            sx={{ whiteSpace: 'nowrap' }}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            {loading ? 'Generating...' : 'Generate Image'}
+          </Button>
+        </Box>
+      )}
+
+      {/* Status message (auto-clears after 3s) */}
+      {statusMessage && (
+        <Typography
+          variant="subtitle1"
+          color="primary"
+          sx={{ mb: 2, fontWeight: 600 }}
+        >
+          {statusMessage}
+        </Typography>
+      )}
+
+      {/* Main layout: left for current image, right for history */}
+      <Grid container spacing={2}>
+        {/* Left column: latest generated image */}
+        <Grid item xs={12} md={8}>
+          {generatedImage && (
+            <Paper elevation={3} sx={{ p: 2 }}>
+              <Typography variant="h6" gutterBottom>
+                Generated Image:
+              </Typography>
+              <Card>
+                <CardMedia
+                  component="img"
+                  image={generatedImage}
+                  alt="Generated Image"
+                />
+              </Card>
+            </Paper>
+          )}
+        </Grid>
+
+        {/* Right column: history */}
+        <Grid item xs={12} md={4}>
+          <Paper
+            elevation={3}
+            sx={{ p: 2, maxHeight: '70vh', overflowY: 'auto' }}
           >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+            <Box
+              display="flex"
+              justifyContent="space-between"
+              alignItems="center"
+              mb={2}
+            >
+              <Typography variant="h6">History</Typography>
+              <IconButton
+                color="error"
+                onClick={handleClearHistory}
+                title="Clear History"
+              >
+                <ClearIcon />
+              </IconButton>
+            </Box>
+            {history.length === 0 && (
+              <Typography>No previous images.</Typography>
+            )}
+
+            {history.map((item, index) => (
+              <Box key={index} mb={2}>
+                <Card variant="outlined">
+                  <CardContent>
+                    <Typography
+                      variant="subtitle2"
+                      sx={{ fontWeight: 'bold', mb: 1 }}
+                    >
+                      Prompt:
+                    </Typography>
+                    <Typography variant="body2" sx={{ mb: 1 }}>
+                      {item.prompt}
+                    </Typography>
+                    <CardMedia
+                      component="img"
+                      image={item.imageUrl}
+                      alt="History Image"
+                      sx={{ width: 100, height: 100, border: '1px solid #ccc' }}
+                    />
+                  </CardContent>
+                </Card>
+                {index < history.length - 1 && <Divider sx={{ mt: 2 }} />}
+              </Box>
+            ))}
+          </Paper>
+        </Grid>
+      </Grid>
+
+      {/* MOBILE BOTTOM BAR (prompt + generate + sign out) */}
+      {isMobile && (
+        <Box
+          sx={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            p: 1,
+            bgcolor: 'background.paper',
+            borderTop: '1px solid #ccc',
+            display: 'flex',
+            gap: 1
+          }}
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+          <TextField
+            label="Enter prompt"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            size="small"
+            sx={{ flex: 1 }}
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+          <Button
+            variant="contained"
+            disabled={loading}
+            onClick={handleGenerateMobile}
+            sx={{ whiteSpace: 'nowrap' }}
+          >
+            {loading ? '...' : 'Generate'}
+          </Button>
+          <Button variant="outlined" color="error" onClick={() => signOut()}>
+            Sign out
+          </Button>
+        </Box>
+      )}
+    </Container>
   );
 }

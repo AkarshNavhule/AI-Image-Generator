@@ -1,0 +1,173 @@
+:root {
+    --primary-color: #1e90ff;
+    --bg-color: #f5f5f5;
+    --text-color: #333;
+    --border-color: #ccc;
+    --aside-bg: #fafafa;
+  }
+  
+  /* Base body styling: gradient background */
+  body {
+    background: linear-gradient(135deg, #8ec5fc 0%, #e0c3fc 100%);
+    margin: 0;
+    padding: 0;
+    font-family: "Open Sans", sans-serif;
+    color: var(--text-color);
+  }
+  
+  /* Main container with max width and center alignment */
+  .main {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  
+  /* Top bar: user info + sign-out button */
+  .topBar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+  
+  /* Sign-in layout */
+  .signInSection {
+    padding: 2rem;
+    text-align: center;
+  }
+  
+  /* Form styling */
+  .form {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .inputPrompt {
+    flex: 1;
+    padding: 0.5rem;
+    font-size: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    transition: border-color 0.2s;
+  }
+  
+  .inputPrompt:focus {
+    border-color: var(--primary-color);
+    outline: none;
+  }
+  
+  .generateButton {
+    background: var(--primary-color);
+    color: #fff;
+    border: none;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+  }
+  
+  .generateButton:hover {
+    background-color: #0059b3;
+  }
+  
+  /* Status message styling */
+  .statusMessage {
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+    font-weight: 600;
+  }
+  
+  /* Main layout: left column + aside for history */
+  .layout {
+    display: flex;
+    gap: 2rem;
+  }
+  
+  /* Left column for the latest generated image */
+  .leftColumn {
+    flex: 1 1 60%;
+  }
+  
+  .generatedImageWrapper {
+    border: 1px solid var(--border-color);
+    padding: 1rem;
+    border-radius: 4px;
+    background: #fff;
+  }
+  
+  /* History aside on the right */
+  .historyAside {
+    flex: 1 1 300px;
+    background: var(--aside-bg);
+    padding: 1rem;
+    border-radius: 4px;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  
+  .historyHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  
+  .historyItem {
+    border: 1px solid var(--border-color);
+    padding: 0.5rem;
+    margin-bottom: 1rem;
+    background: #fff;
+    border-radius: 4px;
+    transition: transform 0.2s ease;
+  }
+  
+  .historyItem:hover {
+    transform: scale(1.02);
+  }
+  
+  .promptTitle {
+    font-weight: bold;
+    margin-bottom: 0.3rem;
+  }
+  
+  .thumbnail {
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    margin-top: 0.3rem;
+  }
+  
+  /* ============================= */
+  /* Responsive Breakpoints        */
+  /* ============================= */
+  
+  /* Tablet: max-width 1024px */
+  @media (max-width: 1024px) {
+    .form {
+      /* Stacking the prompt + button for narrower tablet widths */
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+  
+    .generateButton {
+      align-self: flex-start;
+    }
+  }
+  
+  /* Phone: max-width 768px */
+  @media (max-width: 768px) {
+    .layout {
+      flex-direction: column;
+    }
+  
+    .leftColumn,
+    .historyAside {
+      width: 100%;
+      max-width: 100%;
+    }
+  
+    .generatedImageWrapper {
+      margin-bottom: 1rem;
+    }
+  }
+  
