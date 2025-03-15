@@ -117,7 +117,19 @@ export default function HomePage() {
     localStorage.removeItem('imageHistory');
   }
 
-  // 8) Wait for session to load to avoid SSR mismatch
+  // 8) Download the generated image locally
+  function handleDownloadImage() {
+    if (!generatedImage) return;
+
+    const link = document.createElement('a');
+    link.href = generatedImage;
+    link.download = 'generated-image.png'; // Default filename
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  // 9) Wait for session to load to avoid SSR mismatch
   if (status === 'loading') {
     return (
       <Container sx={{ textAlign: 'center', mt: 5 }}>
@@ -203,7 +215,7 @@ export default function HomePage() {
 
       {/* Main layout: left for current image, right for history */}
       <Grid container spacing={2}>
-        {/* Left column: latest generated image */}
+        {/* Left column: latest generated image + Download button */}
         <Grid item xs={12} md={8}>
           {generatedImage && (
             <Paper elevation={3} sx={{ p: 2 }}>
@@ -216,6 +228,11 @@ export default function HomePage() {
                   image={generatedImage}
                   alt="Generated Image"
                 />
+                <CardActions>
+                  <Button variant="contained" onClick={handleDownloadImage}>
+                    Download Image
+                  </Button>
+                </CardActions>
               </Card>
             </Paper>
           )}
