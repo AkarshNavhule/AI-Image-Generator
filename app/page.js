@@ -133,7 +133,7 @@ export default function HomePage() {
     return (
       <Container sx={{ textAlign: 'center', mt: 5 }}>
         <Typography variant="h5" gutterBottom>
-          Please sign in
+          Nestle Fans AI ImageGenerator
         </Typography>
         <Button variant="contained" onClick={() => signIn('google')}>
           Sign in with Google
