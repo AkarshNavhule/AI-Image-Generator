@@ -28,7 +28,7 @@ export async function POST(request) {
 
     // 5) Call fal.ai FLUX using "subscribe"
     //    This waits for the job to finish and returns the result.
-    const result = await fal.subscribe('fal-ai/flux/dev', {
+    const result = await fal.subscribe('fal-ai/minimax-image', {
       input: {
         // Basic prompt or advanced parameters:
         prompt: prompt,
