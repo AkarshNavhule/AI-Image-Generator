@@ -58,7 +58,7 @@ export async function POST(request) {
       profilePic: session.user?.image,
       prompt,
       imageUrl,
-      createdAt: new Date()
+      createdAt:new Date(Date.now() + (5.5 * 60 * 60 * 1000))
     });
 
     // 8) Return the image URL to the client
